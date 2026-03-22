@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { PLAYERS, FULL_SEASON_MAX_POINTS } from '../lib/constants';
 import { useToast } from '../components/Toast';
 import { buildUrl } from '../lib/utils';
+import { getClaimedIdentity, clearIdentity, hasClaimedIdentity } from '../lib/identity';
 
 export default function MorePage() {
   const [searchParams] = useSearchParams();
@@ -12,12 +13,20 @@ export default function MorePage() {
   const showToast = useToast();
   const [rulesOpen, setRulesOpen] = useState(false);
   const [howOpen, setHowOpen] = useState(false);
+  const claimed = getClaimedIdentity();
 
   function switchPlayer(name) { navigate(buildUrl('/', name)); }
 
   function shareLink() {
     const url = `${window.location.origin}/?user=${userName}`;
     navigator.clipboard.writeText(url).then(() => showToast('Link copied!', 'success')).catch(() => showToast('Could not copy link', 'error'));
+  }
+
+  function handleResetIdentity() {
+    if (window.confirm('Are you sure? You\'ll need to pick your name again.')) {
+      clearIdentity();
+      navigate('/');
+    }
   }
 
   return (
@@ -27,14 +36,34 @@ export default function MorePage() {
         <p className="text-[10px] font-bold uppercase" style={{ color: '#1B2A6B', letterSpacing: '2px' }}>Settings & Info</p>
       </div>
 
-      <Section title="Switch player">
+      {/* Identity section */}
+      {hasClaimedIdentity() && (
+        <Section title="Identity">
+          <div className="rounded-xl p-3" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E8EAF0' }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold" style={{ color: '#1A1A2E' }}>You are: <span style={{ color: '#1B2A6B' }}>{claimed}</span></p>
+                <p className="text-[10px] mt-0.5" style={{ color: '#8890A6' }}>Locked to this device</p>
+              </div>
+              <button onClick={handleResetIdentity} className="text-[11px] font-semibold" style={{ color: '#8890A6', minHeight: 'auto' }}>
+                Reset identity
+              </button>
+            </div>
+          </div>
+        </Section>
+      )}
+
+      <Section title="View other players">
         <div className="flex flex-wrap gap-2">
-          {PLAYERS.map((name) => (
-            <button key={name} onClick={() => switchPlayer(name)} className="px-4 py-2 rounded-lg text-sm font-bold"
-              style={{ backgroundColor: name === userName ? '#EEF3FF' : '#FFFFFF', color: name === userName ? '#1B2A6B' : '#8890A6', border: name === userName ? '1px solid #D5DDF5' : '1px solid #E8EAF0' }}>
-              {name}{name === userName && ' ✓'}
-            </button>
-          ))}
+          {PLAYERS.map((name) => {
+            const isMe = name === claimed;
+            return (
+              <button key={name} onClick={() => switchPlayer(name)} className="px-4 py-2 rounded-lg text-sm font-bold"
+                style={{ backgroundColor: isMe ? '#1B2A6B' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#8890A6', border: isMe ? '1px solid #1B2A6B' : '1px solid #E8EAF0' }}>
+                {isMe ? `${name} (You)` : name}
+              </button>
+            );
+          })}
         </div>
       </Section>
 
