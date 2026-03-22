@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ipl-deep: #0E1842;
+  --color-ipl-blue: #1B2A6B;
+  --color-ipl-card: #142055;
+  --color-ipl-yellow: #C8E629;
+  --color-ipl-pink: #E8458B;
+  --color-ipl-text: #F1F5F9;
+  --color-ipl-text-secondary: #9CAED4;
+  --color-ipl-text-muted: #6B7EB0;
+  --color-ipl-border: rgba(200, 230, 41, 0.08);
+  --color-ipl-green: #22C55E;
+  --color-ipl-red: #EF4444;
+  --font-family-display: 'Outfit', sans-serif;
+  --font-family-mono: 'Space Mono', monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-ipl-deep);
+  font-family: var(--font-family-display);
+  color: var(--color-ipl-text);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+.font-mono-num {
+  font-family: var(--font-family-mono);
+}
+
+/* Live status pulse */
+.status-live {
+  animation: live-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Safe area for notched phones */
+.safe-bottom {
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+/* Hide scrollbar utility */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(200, 230, 41, 0.15);
+  border-radius: 2px;
+}
+
+/* Touch targets */
+button, a {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+/* Reduce motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
