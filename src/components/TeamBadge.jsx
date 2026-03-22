@@ -28,8 +28,8 @@ export default function TeamBadge({ team, size = 'md', selected = false, onClick
       className="flex flex-col items-center gap-1.5 min-w-[80px] py-2 px-2 rounded-xl transition-all duration-200"
       style={{
         cursor: disabled ? 'default' : 'pointer',
-        backgroundColor: selected ? 'rgba(200, 230, 41, 0.1)' : 'transparent',
-        border: selected ? '1px solid rgba(200, 230, 41, 0.3)' : '1px solid transparent',
+        backgroundColor: selected ? '#EEF3FF' : 'transparent',
+        border: selected ? '1px solid rgba(27, 42, 107, 0.2)' : '1px solid transparent',
       }}
     >
       {/* Logo circle */}
@@ -38,11 +38,11 @@ export default function TeamBadge({ team, size = 'md', selected = false, onClick
         style={{
           width: dims.container,
           height: dims.container,
-          backgroundColor: `${branding.primary}1F`,
+          backgroundColor: `${branding.primary}14`,
           border: selected
-            ? '2.5px solid #C8E629'
+            ? '2.5px solid #1B2A6B'
             : `2px solid ${branding.primary}40`,
-          boxShadow: selected ? '0 0 12px rgba(200, 230, 41, 0.25)' : 'none',
+          boxShadow: selected ? '0 0 12px rgba(27, 42, 107, 0.15)' : 'none',
         }}
       >
         {!imgError && logo ? (
@@ -83,7 +83,7 @@ export default function TeamBadge({ team, size = 'md', selected = false, onClick
       <span
         className="leading-none text-center"
         style={{
-          color: '#6B7EB0',
+          color: '#8890A6',
           fontSize: dims.name,
           fontWeight: 500,
           maxWidth: 80,

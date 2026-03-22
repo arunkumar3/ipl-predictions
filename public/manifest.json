@@ -4,8 +4,8 @@
   "description": "IPL 2026 Prediction League",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0E1842",
-  "theme_color": "#0E1842",
+  "background_color": "#F5F6FA",
+  "theme_color": "#1B2A6B",
   "icons": [
     { "src": "/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" },
     { "src": "/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml" }

@@ -17,26 +17,17 @@ export default class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div
-          className="min-h-screen flex items-center justify-center p-6"
-          style={{ backgroundColor: '#0E1842' }}
-        >
+        <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: '#F5F6FA' }}>
           <div className="text-center max-w-sm">
             <p className="text-3xl mb-4">😵</p>
-            <h1 className="text-lg font-bold mb-2" style={{ color: '#F1F5F9' }}>
-              Something went wrong
-            </h1>
-            <p className="text-sm mb-6" style={{ color: '#9CAED4' }}>
+            <h1 className="text-lg font-bold mb-2" style={{ color: '#1A1A2E' }}>Something went wrong</h1>
+            <p className="text-sm mb-6" style={{ color: '#4A5068' }}>
               Try refreshing the page. If the problem persists, check your internet connection.
             </p>
             <button
               onClick={() => window.location.reload()}
               className="px-6 py-3 rounded-xl text-sm font-bold"
-              style={{
-                backgroundColor: 'rgba(200, 230, 41, 0.1)',
-                color: '#C8E629',
-                border: '1px solid rgba(200, 230, 41, 0.2)',
-              }}
+              style={{ backgroundColor: '#1B2A6B', color: '#FFFFFF' }}
             >
               Refresh page
             </button>
@@ -44,7 +35,6 @@ export default class ErrorBoundary extends Component {
         </div>
       );
     }
-
     return this.props.children;
   }
 }

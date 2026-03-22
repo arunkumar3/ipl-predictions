@@ -1,17 +1,37 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ipl-deep: #0E1842;
-  --color-ipl-blue: #1B2A6B;
-  --color-ipl-card: #142055;
+  /* Page backgrounds */
+  --color-ipl-page-bg: #F5F6FA;
+  --color-ipl-card-bg: #FFFFFF;
+  --color-ipl-card-border: #E8EAF0;
+  --color-ipl-card-shadow: rgba(0, 0, 0, 0.04);
+
+  /* Header/nav (stays dark) */
+  --color-ipl-header-bg: #1B2A6B;
+  --color-ipl-header-deep: #0E1842;
+
+  /* Accents */
   --color-ipl-yellow: #C8E629;
   --color-ipl-pink: #E8458B;
-  --color-ipl-text: #F1F5F9;
-  --color-ipl-text-secondary: #9CAED4;
-  --color-ipl-text-muted: #6B7EB0;
-  --color-ipl-border: rgba(200, 230, 41, 0.08);
-  --color-ipl-green: #22C55E;
-  --color-ipl-red: #EF4444;
+
+  /* Text on light background */
+  --color-ipl-text: #1A1A2E;
+  --color-ipl-text-secondary: #4A5068;
+  --color-ipl-text-muted: #8890A6;
+
+  /* Borders */
+  --color-ipl-border: #E2E4EC;
+  --color-ipl-border-light: #F0F1F5;
+
+  /* Status colors */
+  --color-ipl-green: #16A34A;
+  --color-ipl-red: #E24B4A;
+  --color-ipl-green-bg: #E8F8EE;
+  --color-ipl-red-bg: #FEE7E7;
+  --color-ipl-blue-bg: #EEF3FF;
+
+  /* Fonts */
   --font-family-display: 'Outfit', sans-serif;
   --font-family-mono: 'Space Mono', monospace;
 }
@@ -21,9 +41,9 @@ html {
 }
 
 body {
-  background-color: var(--color-ipl-deep);
+  background-color: #F5F6FA;
   font-family: var(--font-family-display);
-  color: var(--color-ipl-text);
+  color: #1A1A2E;
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -68,7 +88,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(200, 230, 41, 0.15);
+  background: #D0D3DC;
   border-radius: 2px;
 }
 

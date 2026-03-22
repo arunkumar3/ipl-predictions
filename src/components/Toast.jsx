@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { useState, useCallback, createContext, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ToastContext = createContext(null);
@@ -32,26 +32,13 @@ export function ToastProvider({ children }) {
               transition={{ duration: 0.25 }}
               className="px-4 py-2.5 rounded-xl shadow-lg text-center max-w-sm w-full"
               style={{
-                backgroundColor: toast.type === 'success'
-                  ? 'rgba(34, 197, 94, 0.15)'
-                  : toast.type === 'error'
-                    ? 'rgba(239, 68, 68, 0.15)'
-                    : 'rgba(200, 230, 41, 0.1)',
-                border: `1px solid ${
-                  toast.type === 'success' ? 'rgba(34,197,94,0.3)'
-                  : toast.type === 'error' ? 'rgba(239,68,68,0.3)'
-                  : 'rgba(200,230,41,0.2)'
-                }`,
-                backdropFilter: 'blur(12px)',
+                backgroundColor: toast.type === 'success' ? '#E8F8EE' : toast.type === 'error' ? '#FEE7E7' : '#EEF3FF',
+                border: `1px solid ${toast.type === 'success' ? '#B6E8C8' : toast.type === 'error' ? '#F5B5B5' : '#D5DDF5'}`,
               }}
             >
               <span
                 className="text-xs font-semibold"
-                style={{
-                  color: toast.type === 'success' ? '#22C55E'
-                    : toast.type === 'error' ? '#EF4444'
-                    : '#C8E629',
-                }}
+                style={{ color: toast.type === 'success' ? '#16A34A' : toast.type === 'error' ? '#E24B4A' : '#1B2A6B' }}
               >
                 {toast.message}
               </span>

@@ -18,13 +18,13 @@ export default function BottomNav() {
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around py-2 safe-bottom"
       style={{
-        backgroundColor: '#142055',
-        borderTop: '1px solid rgba(200, 230, 41, 0.08)',
+        backgroundColor: '#FFFFFF',
+        borderTop: '1px solid #E8EAF0',
       }}
     >
       {TABS.map((tab) => {
         const isActive = location.pathname === tab.path;
-        const color = isActive ? '#C8E629' : '#6B7EB0';
+        const color = isActive ? '#1B2A6B' : '#8890A6';
         return (
           <Link
             key={tab.path}
@@ -44,7 +44,7 @@ export default function BottomNav() {
                 style={{
                   width: 20,
                   height: 3,
-                  backgroundColor: '#C8E629',
+                  backgroundColor: '#1B2A6B',
                   borderRadius: 2,
                 }}
               />

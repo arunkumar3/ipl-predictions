@@ -12,8 +12,6 @@ import MatchTicker from '../components/MatchTicker';
 import MatchCard from '../components/MatchCard';
 
 const TABS = ['Upcoming', 'All', 'Completed'];
-
-// Opening day is March 28, 2026
 const OPENING_DAY = '2026-03-28';
 
 export default function MatchesPage() {
@@ -30,30 +28,24 @@ export default function MatchesPage() {
 
 function PlayerSelect({ onSelect }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#F5F6FA' }}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-sm rounded-2xl p-6 text-center"
-        style={{
-          backgroundColor: '#142055',
-          border: '1px solid rgba(200, 230, 41, 0.08)',
-        }}
+        style={{ backgroundColor: '#FFFFFF', border: '1px solid #E8EAF0', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
       >
         <div className="flex items-center justify-center gap-2.5 mb-1">
           <img
             src="https://www.iplt20.com/assets/images/IPL_LOGO_CORPORATE_2024.png"
             alt="IPL"
             className="w-10 h-auto object-contain"
-            style={{ filter: 'drop-shadow(0 0 8px rgba(200, 230, 41, 0.15))' }}
           />
-          <h2 className="text-2xl font-black" style={{ color: '#F1F5F9' }}>
-            IPL <span style={{ color: '#C8E629' }}>PREDICT</span>
+          <h2 className="text-2xl font-black" style={{ color: '#1A1A2E' }}>
+            IPL <span style={{ color: '#1B2A6B' }}>PREDICT</span>
           </h2>
         </div>
-        <p className="text-sm mb-6" style={{ color: '#9CAED4' }}>
-          Who are you?
-        </p>
+        <p className="text-sm mb-6" style={{ color: '#4A5068' }}>Who are you?</p>
 
         <div className="flex flex-col gap-3">
           {PLAYERS.map((name, i) => (
@@ -66,11 +58,7 @@ function PlayerSelect({ onSelect }) {
               whileTap={{ scale: 0.98 }}
               onClick={() => onSelect(name)}
               className="w-full py-3.5 rounded-xl text-base font-bold transition-colors"
-              style={{
-                backgroundColor: 'rgba(200, 230, 41, 0.08)',
-                color: '#C8E629',
-                border: '1px solid rgba(200, 230, 41, 0.15)',
-              }}
+              style={{ backgroundColor: '#EEF3FF', color: '#1B2A6B', border: '1px solid #D5DDF5' }}
             >
               {name}
             </motion.button>
@@ -92,7 +80,7 @@ function MatchesView({ userName }) {
   const hasUpcoming = matches.some((m) => m.status === 'upcoming' && !isMatchLocked(m.match_date));
   const [activeTab, setActiveTab] = useState(hasUpcoming ? 'Upcoming' : 'All');
 
-  // Real-time celebration: detect when a match result arrives
+  // Real-time celebration
   useEffect(() => {
     if (!prevMatchesRef.current || !showToast) {
       prevMatchesRef.current = matches;
@@ -103,7 +91,7 @@ function MatchesView({ userName }) {
       if (prev && prev.status !== 'completed' && match.status === 'completed' && match.winner) {
         const pred = predictions[match.match_number];
         if (pred?.predicted_team === match.winner) {
-          showToast(`🎉 You got Match #${match.match_number} right! +1 point`, 'success');
+          showToast(`You got Match #${match.match_number} right! +1 point`, 'success');
         } else if (pred?.predicted_team) {
           showToast(`Match #${match.match_number}: ${match.winner} won. Better luck next time!`, 'error');
         }
@@ -119,12 +107,9 @@ function MatchesView({ userName }) {
 
   const filteredMatches = useMemo(() => {
     switch (activeTab) {
-      case 'Upcoming':
-        return matches.filter((m) => m.status === 'upcoming' && !isMatchLocked(m.match_date));
-      case 'Completed':
-        return matches.filter((m) => m.status === 'completed' || (m.status === 'upcoming' && isMatchLocked(m.match_date)));
-      default:
-        return matches;
+      case 'Upcoming': return matches.filter((m) => m.status === 'upcoming' && !isMatchLocked(m.match_date));
+      case 'Completed': return matches.filter((m) => m.status === 'completed' || (m.status === 'upcoming' && isMatchLocked(m.match_date)));
+      default: return matches;
     }
   }, [matches, activeTab]);
 
@@ -132,16 +117,13 @@ function MatchesView({ userName }) {
     const groups = {};
     filteredMatches.forEach((m) => {
       const key = getDateKey(m.match_date);
-      if (!groups[key]) {
-        groups[key] = { label: formatDateGroup(m.match_date), dateKey: key, matches: [] };
-      }
+      if (!groups[key]) groups[key] = { label: formatDateGroup(m.match_date), dateKey: key, matches: [] };
       groups[key].matches.push(m);
     });
     return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
   }, [filteredMatches]);
 
   const handleTickerNavigate = useCallback((matchNumber) => {
-    // Switch to All or Upcoming tab to ensure the card is visible
     setActiveTab('All');
     setTimeout(() => {
       const el = cardRefs.current[matchNumber];
@@ -154,19 +136,12 @@ function MatchesView({ userName }) {
 
   return (
     <div className="pb-[72px]">
-      {/* Header scrolls away */}
+      {/* Header scrolls away (stays dark) */}
       <Header userName={userName} stats={userStats} />
 
-      {/* Sticky zone: tabs + ticker */}
-      <div
-        className="sticky top-0 z-40"
-        style={{ backgroundColor: '#0E1842' }}
-      >
-        {/* Tabs */}
-        <div
-          className="flex px-4 pt-3 pb-0"
-          style={{ borderBottom: '1px solid rgba(200, 230, 41, 0.08)' }}
-        >
+      {/* Sticky zone: tabs + ticker (stays dark) */}
+      <div className="sticky top-0 z-40" style={{ backgroundColor: '#0E1842' }}>
+        <div className="flex px-4 pt-3 pb-0" style={{ borderBottom: '1px solid rgba(200, 230, 41, 0.08)' }}>
           {TABS.map((tab) => {
             const isActive = activeTab === tab;
             return (
@@ -174,63 +149,41 @@ function MatchesView({ userName }) {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className="flex-1 pb-2.5 text-xs relative transition-colors"
-                style={{
-                  fontWeight: isActive ? 700 : 600,
-                  color: isActive ? '#C8E629' : '#6B7EB0',
-                }}
+                style={{ fontWeight: isActive ? 700 : 600, color: isActive ? '#C8E629' : '#6B7EB0' }}
               >
                 {tab}
                 {isActive && (
                   <motion.div
                     layoutId="tab-underline"
                     className="absolute bottom-0 left-1/2 -translate-x-1/2"
-                    style={{
-                      width: '60%',
-                      height: 2.5,
-                      backgroundColor: '#C8E629',
-                      borderRadius: 2,
-                    }}
+                    style={{ width: '60%', height: 2.5, backgroundColor: '#C8E629', borderRadius: 2 }}
                   />
                 )}
               </button>
             );
           })}
         </div>
-
-        {/* Ticker — sits right below tabs in sticky zone */}
-        {!loading && (
-          <MatchTicker matches={matches} onNavigate={handleTickerNavigate} />
-        )}
+        {!loading && <MatchTicker matches={matches} onNavigate={handleTickerNavigate} />}
       </div>
 
-      {/* Loading skeleton */}
+      {/* Loading skeleton — light */}
       {loading && (
         <div className="px-4 pt-4 space-y-3">
           {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="rounded-[14px] h-[160px] animate-pulse"
-              style={{ backgroundColor: '#142055' }}
-            />
+            <div key={i} className="rounded-[14px] h-[160px] animate-pulse" style={{ backgroundColor: '#E8EAF0' }} />
           ))}
         </div>
       )}
 
       {/* Error */}
       {error && (
-        <div className="mx-4 mt-4 p-3 rounded-lg text-center" style={{ backgroundColor: 'rgba(239, 68, 68, 0.12)' }}>
-          <p className="text-sm" style={{ color: '#EF4444' }}>Couldn't load data</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="text-xs mt-1 underline"
-            style={{ color: '#9CAED4' }}
-          >
-            Retry
-          </button>
+        <div className="mx-4 mt-4 p-3 rounded-lg text-center" style={{ backgroundColor: '#FEE7E7' }}>
+          <p className="text-sm" style={{ color: '#E24B4A' }}>Couldn't load data</p>
+          <button onClick={() => window.location.reload()} className="text-xs mt-1 underline" style={{ color: '#4A5068' }}>Retry</button>
         </div>
       )}
 
-      {/* Match list */}
+      {/* Match list — light background */}
       {!loading && !error && (
         <AnimatePresence mode="wait">
           <motion.div
@@ -241,31 +194,21 @@ function MatchesView({ userName }) {
             className="px-4 pt-2 space-y-4"
           >
             {groupedMatches.length === 0 && (
-              <p className="text-center py-12 text-sm" style={{ color: '#6B7EB0' }}>
-                No matches to show
-              </p>
+              <p className="text-center py-12 text-sm" style={{ color: '#8890A6' }}>No matches to show</p>
             )}
 
             {groupedMatches.map(([dateKey, group]) => (
               <div key={dateKey}>
                 <h3
                   className="font-bold uppercase mb-2.5 mt-4 px-1"
-                  style={{
-                    color: '#6B7EB0',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: '1.5px',
-                  }}
+                  style={{ color: '#8890A6', fontSize: 11, fontWeight: 700, letterSpacing: '1.5px' }}
                 >
                   {group.label.toUpperCase()}
-                  {dateKey === OPENING_DAY && (
-                    <span style={{ color: '#C8E629' }}> · OPENING DAY</span>
-                  )}
+                  {dateKey === OPENING_DAY && <span style={{ color: '#1B2A6B' }}> · OPENING DAY</span>}
                 </h3>
                 <motion.div
                   className="space-y-3"
-                  initial="hidden"
-                  animate="visible"
+                  initial="hidden" animate="visible"
                   variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05 } } }}
                 >
                   {group.matches.map((match) => (
@@ -274,11 +217,7 @@ function MatchesView({ userName }) {
                       ref={(el) => { cardRefs.current[match.match_number] = el; }}
                       variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { duration: 0.25 } } }}
                     >
-                      <MatchCard
-                        match={match}
-                        prediction={predictions[match.match_number]}
-                        onPredict={savePrediction}
-                      />
+                      <MatchCard match={match} prediction={predictions[match.match_number]} onPredict={savePrediction} />
                     </motion.div>
                   ))}
                 </motion.div>
