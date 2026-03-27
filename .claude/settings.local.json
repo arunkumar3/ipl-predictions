@@ -6,7 +6,11 @@
       "Bash(npx create-vite@latest ipl-predictions --template react)",
       "Bash(npm init:*)",
       "Bash(npm install:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(supabase functions:*)"
     ]
   }
 }

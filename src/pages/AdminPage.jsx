@@ -43,8 +43,21 @@ function AdminView() {
     if (!window.confirm(`Set ${winnerCode} as winner of Match #${match.match_number}?`)) return;
     setProcessing(true); setStatus('');
     const { error } = await supabase.rpc('set_match_result', { p_match_number: match.match_number, p_winner: winnerCode, p_result_text: `${winnerCode} won` });
-    if (error) setStatus(`Error: ${error.message}`);
-    else { setStatus(`✓ Match #${match.match_number}: ${winnerCode} wins`); setSelectedMatch(null); }
+    if (error) {
+      setStatus(`Error: ${error.message}`);
+    } else {
+      setStatus(`✓ Match #${match.match_number}: ${winnerCode} wins — generating memes...`);
+      setSelectedMatch(null);
+      // Auto-trigger meme generation
+      try {
+        const res = await supabase.functions.invoke('generate-memes', { body: { match_number: match.match_number } });
+        if (res.error) throw res.error;
+        const data = res.data;
+        setStatus(`✓ Match #${match.match_number}: ${winnerCode} wins — ${data.generated} memes generated`);
+      } catch (err) {
+        setStatus(`✓ Match #${match.match_number}: ${winnerCode} wins (meme generation failed: ${err.message || err})`);
+      }
+    }
     setProcessing(false);
   }
 
