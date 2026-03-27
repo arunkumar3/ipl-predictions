@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     .eq('status', 'completed');
 
   // 5. Build rich context
-  const players = ['Arun', 'Sai', 'Abhi', 'Dinesh'];
+  const players = ['Arun', 'Sai', 'Abhi', 'Dinesh', 'Kiran'];
 
   const matchPredictions = players.map(player => {
     const pred = predictions?.find((p: any) => p.user_name === player);
@@ -120,7 +120,7 @@ WRONG: ${wrongPlayers.join(', ') || 'Nobody'}
 MISSED: ${noPrediction.join(', ') || 'Nobody'}
 `;
 
-  const systemPrompt = `You are a meme writer for a friend group's IPL prediction league. The group has 4 friends: Arun, Sai, Abhi, Dinesh. They're Telugu guys who talk in Tenglish (Telugu-English mix).
+  const systemPrompt = `You are a meme writer for a friend group's IPL prediction league. The group has 5 friends: Arun, Sai, Abhi, Dinesh, Kiran. They're Telugu guys who talk in Tenglish (Telugu-English mix).
 
 Your job: Generate 2-3 SHORT memes based on the match result and prediction data. Each meme should be one of these types:
 

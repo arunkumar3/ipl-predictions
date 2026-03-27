@@ -35,9 +35,9 @@ export function getMatchPoints(stage) {
 
 export const PLAYERS = ['Arun', 'Sai', 'Abhi', 'Dinesh', 'Kiran'];
 
-// Full season: 84 league + 3 playoffs (Q1, Elim, Q2) + 1 final = 88 matches
-// Max points: 84×1 + 3×2 + 1×3 = 93
-export const FULL_SEASON_MAX_POINTS = 93;
+// Full season: 70 league + 3 playoffs (Q1, Elim, Q2) + 1 final = 74 matches
+// Max points: 70×1 + 3×2 + 1×3 = 79
+export const FULL_SEASON_MAX_POINTS = 79;
 
 // Dynamic max points from an array of matches
 export function getMaxPoints(matches) {
