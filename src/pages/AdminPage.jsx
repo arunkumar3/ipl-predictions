@@ -31,8 +31,11 @@ function AdminView() {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [status, setStatus] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [memeMatch, setMemeMatch] = useState(null);
+  const [memeStatus, setMemeStatus] = useState('');
 
   const pendingMatches = useMemo(() => matches.filter((m) => m.status !== 'completed'), [matches]);
+  const completedMatches = useMemo(() => matches.filter((m) => m.status === 'completed'), [matches]);
   const match = matches.find((m) => m.match_number === selectedMatch);
 
   async function setWinner(winnerCode) {
@@ -71,6 +74,29 @@ function AdminView() {
     setStatus(error ? `Error: ${error.message}` : '✓ All results cleared'); setProcessing(false);
   }
 
+  async function generateMemes(model) {
+    if (!memeMatch) return;
+    setMemeStatus(`Generating ${model === 'both' ? 'Grok + Gemini' : model} memes...`);
+    try {
+      // If regenerating a specific model, delete existing memes for that model first
+      if (model !== 'both') {
+        await supabase.from('memes').delete().eq('match_number', memeMatch).eq('model', model);
+      }
+      const res = await supabase.functions.invoke('generate-memes', { body: { match_number: memeMatch } });
+      if (res.error) throw res.error;
+      const data = res.data;
+      setMemeStatus(`✓ Generated ${data.generated} memes: ${data.results.map(r => `${r.model}(${r.count})`).join(', ')}`);
+    } catch (err) {
+      setMemeStatus(`Error: ${err.message || err}`);
+    }
+  }
+
+  async function deleteMemes() {
+    if (!memeMatch || !window.confirm(`Delete all memes for Match #${memeMatch}?`)) return;
+    const { error } = await supabase.from('memes').delete().eq('match_number', memeMatch);
+    setMemeStatus(error ? `Error: ${error.message}` : `✓ All memes deleted for Match #${memeMatch}`);
+  }
+
   if (loading) return <div className="p-6"><div className="h-8 w-32 rounded animate-pulse mb-4" style={{ backgroundColor: '#E8EAF0' }} /><div className="h-48 rounded-xl animate-pulse" style={{ backgroundColor: '#E8EAF0' }} /></div>;
 
   return (
@@ -103,6 +129,25 @@ function AdminView() {
           </div>
         </motion.div>
       )}
+
+      {/* Meme Generation */}
+      <div className="mb-6 p-4 rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E8EAF0' }}>
+        <p className="text-xs font-bold uppercase mb-3" style={{ color: '#4A5068', letterSpacing: '1px' }}>Generate Memes</p>
+        {memeStatus && <div className="mb-3 px-3 py-2 rounded-lg text-xs font-semibold" style={{ backgroundColor: memeStatus.startsWith('Error') ? '#FEE7E7' : '#E8F8EE', color: memeStatus.startsWith('Error') ? '#E24B4A' : '#16A34A' }}>{memeStatus}</div>}
+        <select value={memeMatch || ''} onChange={(e) => setMemeMatch(e.target.value ? parseInt(e.target.value) : null)}
+          className="w-full px-3 py-2.5 rounded-xl text-sm font-semibold appearance-none mb-3" style={{ backgroundColor: '#FFFFFF', color: '#1A1A2E', border: '1px solid #E8EAF0', outline: 'none' }}>
+          <option value="">— Select completed match —</option>
+          {completedMatches.map((m) => <option key={m.match_number} value={m.match_number}>Match #{m.match_number}: {m.team1} vs {m.team2} — {m.winner} won</option>)}
+        </select>
+        {memeMatch && (
+          <div className="flex gap-2 flex-wrap">
+            <AdminBtn label="Generate Both" color="#1B2A6B" onClick={() => generateMemes('both')} disabled={processing} />
+            <AdminBtn label="Regen Grok" color="#4A5068" onClick={() => generateMemes('grok')} disabled={processing} />
+            <AdminBtn label="Regen Gemini" color="#3B82F6" onClick={() => generateMemes('gemini')} disabled={processing} />
+            <AdminBtn label="Delete All Memes" color="#E24B4A" onClick={deleteMemes} disabled={processing} />
+          </div>
+        )}
+      </div>
 
       <div className="space-y-2">
         <p className="text-xs font-bold uppercase mb-2" style={{ color: '#4A5068', letterSpacing: '1px' }}>Bulk Actions</p>

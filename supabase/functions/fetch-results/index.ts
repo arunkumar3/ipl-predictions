@@ -87,6 +87,20 @@ Deno.serve(async (_req) => {
             .eq('match_number', match.match_number)
 
           updates.push({ match: match.match_number, winner: winnerCode, detail })
+
+          // Trigger meme generation (fire-and-forget — don't block result update)
+          try {
+            await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-memes`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ match_number: match.match_number }),
+            });
+          } catch (err) {
+            console.error('Meme generation failed:', err);
+          }
         }
       } else if (stateStr === 'in' && match.status !== 'live') {
         // Match is live — update status

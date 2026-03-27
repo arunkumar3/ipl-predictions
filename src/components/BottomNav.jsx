@@ -1,11 +1,12 @@
 import { useLocation, useSearchParams, Link } from 'react-router-dom';
-import { Zap, Trophy, BarChart3, Settings } from 'lucide-react';
+import { Zap, Trophy, Flame, BarChart3, Settings } from 'lucide-react';
 import { buildUrl } from '../lib/utils';
 import { getClaimedIdentity } from '../lib/identity';
 
 const TABS = [
   { path: '/', label: 'MATCHES', Icon: Zap },
   { path: '/leaderboard', label: 'BOARD', Icon: Trophy },
+  { path: '/memes', label: 'MEMES', Icon: Flame },
   { path: '/stats', label: 'STATS', Icon: BarChart3 },
   { path: '/more', label: 'MORE', Icon: Settings },
 ];
