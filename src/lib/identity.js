@@ -1,3 +1,5 @@
+import { PLAYERS } from './constants';
+
 const STORAGE_KEY = 'ipl-predict-identity';
 
 export function getClaimedIdentity() {
@@ -18,7 +20,14 @@ export function claimIdentity(userName) {
 
 export function isOwnProfile(urlUser) {
   const claimed = getClaimedIdentity();
-  return claimed && claimed === urlUser;
+
+  // No identity claimed yet — auto-claim if valid player
+  if (!claimed && PLAYERS.includes(urlUser)) {
+    claimIdentity(urlUser);
+    return true;
+  }
+
+  return claimed === urlUser;
 }
 
 export function hasClaimedIdentity() {
