@@ -6,7 +6,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const GROK_API_URL = 'https://api.x.ai/v1/chat/completions';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 Deno.serve(async (req) => {
+  // CORS must be FIRST — before any body parsing
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   const { match_number } = await req.json();
 
   const supabase = createClient(
@@ -24,7 +34,7 @@ Deno.serve(async (req) => {
   if (!match || !match.winner) {
     return new Response(JSON.stringify({ error: 'Match not completed' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -221,6 +231,6 @@ RESPOND ONLY IN JSON — no markdown, no preamble, no backticks:
     generated: allInserts.length,
     results: results.map(r => ({ model: r.model, count: r.memes.length, error: r.error })),
   }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 });

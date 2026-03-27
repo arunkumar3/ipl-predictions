@@ -33,7 +33,7 @@ export function getMatchPoints(stage) {
   }
 }
 
-export const PLAYERS = ['Arun', 'Sai', 'Abhi', 'Dinesh'];
+export const PLAYERS = ['Arun', 'Sai', 'Abhi', 'Dinesh', 'Kiran'];
 
 // Full season: 84 league + 3 playoffs (Q1, Elim, Q2) + 1 final = 88 matches
 // Max points: 84×1 + 3×2 + 1×3 = 93
