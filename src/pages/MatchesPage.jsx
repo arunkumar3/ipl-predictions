@@ -7,7 +7,7 @@ import { usePredictions } from '../hooks/usePredictions';
 import { useLeaderboard } from '../hooks/useLeaderboard';
 import { getDateKey, formatDateGroup, isMatchLocked, buildUrl } from '../lib/utils';
 import { useToast } from '../components/Toast';
-import { getClaimedIdentity, hasClaimedIdentity, claimIdentity, isOwnProfile } from '../lib/identity';
+import { getClaimedIdentity, hasClaimedIdentity, claimIdentity, isOwnProfile, clearIdentity } from '../lib/identity';
 import Header from '../components/Header';
 import MatchTicker from '../components/MatchTicker';
 import MatchCard from '../components/MatchCard';
@@ -19,17 +19,26 @@ export default function MatchesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const userName = searchParams.get('user');
+  const resetRequested = searchParams.get('reset') === 'true';
   const isValidUser = userName && PLAYERS.includes(userName);
+
+  // Handle ?reset=true — clear identity and show player selection
+  useEffect(() => {
+    if (resetRequested) {
+      clearIdentity();
+      setSearchParams({}, { replace: true });
+    }
+  }, [resetRequested, setSearchParams]);
 
   // Auto-redirect if identity is claimed but no ?user param
   useEffect(() => {
-    if (!isValidUser && hasClaimedIdentity()) {
+    if (!resetRequested && !isValidUser && hasClaimedIdentity()) {
       const claimed = getClaimedIdentity();
       if (PLAYERS.includes(claimed)) {
         setSearchParams({ user: claimed });
       }
     }
-  }, [isValidUser, setSearchParams]);
+  }, [isValidUser, resetRequested, setSearchParams]);
 
   if (!isValidUser) {
     return <PlayerSelect onSelect={(name) => {
@@ -103,6 +112,24 @@ function PlayerSelect({ onSelect }) {
             );
           })}
         </div>
+
+        {hasClaimed && (
+          <p className="text-[11px] mt-4" style={{ color: '#8890A6' }}>
+            Locked as {claimed}. Not you?{' '}
+            <button
+              onClick={() => {
+                if (window.confirm('Reset your identity? You\'ll need to pick your name again.')) {
+                  clearIdentity();
+                  window.location.replace('/');
+                }
+              }}
+              className="underline"
+              style={{ color: '#8890A6', minHeight: 'auto' }}
+            >
+              Reset
+            </button>
+          </p>
+        )}
       </motion.div>
     </div>
   );
@@ -183,16 +210,30 @@ function MatchesView({ userName }) {
 
       {/* Read-only banner */}
       {readOnly && claimedName && (
-        <div className="flex items-center justify-between px-4 py-2" style={{ backgroundColor: '#EEF3FF', borderBottom: '1px solid #D5DDF5' }}>
-          <span className="text-xs font-semibold" style={{ color: '#1B2A6B' }}>
-            Viewing {userName}'s predictions (read-only)
-          </span>
+        <div className="px-4 py-2" style={{ backgroundColor: '#EEF3FF', borderBottom: '1px solid #D5DDF5' }}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold" style={{ color: '#1B2A6B' }}>
+              Viewing {userName}'s predictions (read-only)
+            </span>
+            <button
+              onClick={() => navigate(buildUrl('/', claimedName))}
+              className="text-xs font-bold"
+              style={{ color: '#E8458B', minHeight: 'auto' }}
+            >
+              Switch to your profile →
+            </button>
+          </div>
           <button
-            onClick={() => navigate(buildUrl('/', claimedName))}
-            className="text-xs font-bold"
-            style={{ color: '#E8458B', minHeight: 'auto' }}
+            onClick={() => {
+              if (window.confirm('Reset your identity? You\'ll need to pick your name again.')) {
+                clearIdentity();
+                navigate('/');
+              }
+            }}
+            className="text-[10px] mt-0.5"
+            style={{ color: '#8890A6', minHeight: 'auto' }}
           >
-            Switch to your profile →
+            Not {claimedName}? Reset identity
           </button>
         </div>
       )}
