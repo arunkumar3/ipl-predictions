@@ -138,7 +138,7 @@ function AdminView() {
 
       try {
         const { data, error } = await supabase.functions.invoke('generate-memes', {
-          body: { match_number: m.match_number },
+          body: { match_number: m.match_number, regenerate: true },
         });
 
         if (error) throw error;

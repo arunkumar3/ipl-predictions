@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   };
 
-  const { match_number } = await req.json();
+  const { match_number, regenerate } = await req.json();
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -122,6 +122,11 @@ Deno.serve(async (req) => {
 
   if (!match || !match.winner) {
     return new Response(JSON.stringify({ error: 'Match not completed' }), { status: 400, headers: corsHeaders });
+  }
+
+  // 1.5. If regenerating, delete existing memes for this match first
+  if (regenerate) {
+    await supabase.from('memes').delete().eq('match_number', match_number);
   }
 
   // 2. Check for existing memes (duplicate prevention)

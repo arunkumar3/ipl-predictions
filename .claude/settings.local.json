@@ -10,7 +10,16 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(supabase functions:*)"
+      "Bash(supabase functions:*)",
+      "Bash(npm run:*)",
+      "Bash(curl -fsSL https://raw.githubusercontent.com/supabase/cli/main/install.sh)",
+      "Bash(sh)",
+      "Bash(/opt/homebrew/bin/brew --version)",
+      "Bash(/usr/local/bin/brew --version)",
+      "Bash(/opt/homebrew/bin/brew install:*)",
+      "Bash(/opt/homebrew/bin/supabase:*)",
+      "Bash(/opt/homebrew/bin/node --version)",
+      "Bash(git:*)"
     ]
   }
 }
