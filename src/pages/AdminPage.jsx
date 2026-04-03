@@ -33,6 +33,8 @@ function AdminView() {
   const [processing, setProcessing] = useState(false);
   const [memeMatch, setMemeMatch] = useState(null);
   const [memeStatus, setMemeStatus] = useState('');
+  const [regeneratingAll, setRegeneratingAll] = useState(false);
+  const [regenProgress, setRegenProgress] = useState([]);
 
   const pendingMatches = useMemo(() => matches.filter((m) => m.status !== 'completed'), [matches]);
   const completedMatches = useMemo(() => matches.filter((m) => m.status === 'completed'), [matches]);
@@ -104,6 +106,67 @@ function AdminView() {
     }
   }
 
+  async function regenerateAllMemes() {
+    if (!confirm('This will DELETE all existing memes and regenerate for every completed match. Are you sure?')) return;
+
+    setRegeneratingAll(true);
+    setRegenProgress([]);
+
+    // 1. Delete all existing memes
+    const { error: deleteError } = await supabase.from('memes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (deleteError) {
+      console.error('Delete failed:', deleteError);
+    }
+
+    // 2. Get all completed matches
+    const { data: completedMatchList } = await supabase
+      .from('matches')
+      .select('match_number, team1, team2, winner')
+      .eq('status', 'completed')
+      .order('match_number', { ascending: true });
+
+    if (!completedMatchList?.length) {
+      alert('No completed matches found');
+      setRegeneratingAll(false);
+      return;
+    }
+
+    // 3. Generate memes for each match sequentially
+    const results = [];
+    for (const m of completedMatchList) {
+      setRegenProgress(prev => [...prev, { match: m.match_number, status: 'generating', detail: `${m.team1} vs ${m.team2}` }]);
+
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-memes', {
+          body: { match_number: m.match_number },
+        });
+
+        if (error) throw error;
+
+        setRegenProgress(prev => prev.map(p =>
+          p.match === m.match_number
+            ? { ...p, status: 'done', detail: `${m.team1} vs ${m.team2} — ${data?.generated || 0} memes` }
+            : p
+        ));
+        results.push({ match: m.match_number, success: true, count: data?.generated || 0 });
+      } catch (err) {
+        setRegenProgress(prev => prev.map(p =>
+          p.match === m.match_number
+            ? { ...p, status: 'error', detail: `${m.team1} vs ${m.team2} — FAILED: ${err.message}` }
+            : p
+        ));
+        results.push({ match: m.match_number, success: false, error: err.message });
+      }
+
+      // Small delay between calls to avoid rate limiting
+      await new Promise(r => setTimeout(r, 2000));
+    }
+
+    setRegeneratingAll(false);
+    const total = results.reduce((sum, r) => sum + (r.count || 0), 0);
+    alert(`Done! Generated ${total} memes across ${results.filter(r => r.success).length} matches.`);
+  }
+
   async function deleteMemes() {
     if (!memeMatch || !window.confirm(`Delete all memes for Match #${memeMatch}?`)) return;
     const { error } = await supabase.from('memes').delete().eq('match_number', memeMatch);
@@ -160,6 +223,38 @@ function AdminView() {
             <AdminBtn label="Delete All Memes" color="#E24B4A" onClick={deleteMemes} disabled={processing} />
           </div>
         )}
+
+        <div style={{ borderTop: '1px solid #E8EAF0', marginTop: 16, paddingTop: 16 }}>
+          <button
+            onClick={regenerateAllMemes}
+            disabled={regeneratingAll || processing}
+            className="w-full px-4 py-3 rounded-xl text-sm font-bold"
+            style={{
+              backgroundColor: regeneratingAll ? '#FEF3C7' : '#FFF7ED',
+              color: '#D97706',
+              border: '1px solid #FBBF24',
+              opacity: (regeneratingAll || processing) ? 0.6 : 1,
+            }}
+          >
+            {regeneratingAll ? '⏳ Regenerating...' : '🔄 Regenerate ALL Matches'}
+          </button>
+          <p className="text-[10px] mt-1.5" style={{ color: '#8890A6' }}>
+            Deletes all existing memes and regenerates for every completed match.
+          </p>
+
+          {regeneratingAll && regenProgress.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>
+                Progress: {regenProgress.filter(p => p.status === 'done').length}/{regenProgress.length} matches...
+              </p>
+              {regenProgress.map(p => (
+                <div key={p.match} style={{ fontSize: 12, padding: '4px 0', color: p.status === 'done' ? '#16a34a' : p.status === 'error' ? '#dc2626' : '#8890A6' }}>
+                  {p.status === 'done' ? '✅' : p.status === 'error' ? '❌' : '⏳'} Match {p.match}: {p.detail}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2">

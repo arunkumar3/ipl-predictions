@@ -217,8 +217,19 @@ function MemeCard({ meme, currentUser, reactToMeme }) {
           {highlightText(meme.meme_text)}
         </p>
         {meme.template_ref && (
-          <p className="mt-2.5 italic" style={{ fontSize: 10, color: '#8890A6' }}>
-            {'\u2014'} {meme.template_ref}
+          <p className="mt-2.5" style={{ fontSize: 11, color: '#8890A6' }}>
+            {'\u2014'} {(() => {
+              const match = meme.template_ref.match(/^(\w+)\s+energy\s*[—-]\s*(.*)$/i);
+              if (match) {
+                return (
+                  <>
+                    <span style={{ fontWeight: 700, color: '#4A5068' }}>{match[1]} energy</span>
+                    {match[2] && <span style={{ fontStyle: 'italic' }}> {match[2]}</span>}
+                  </>
+                );
+              }
+              return <span style={{ fontStyle: 'italic' }}>{meme.template_ref}</span>;
+            })()}
           </p>
         )}
       </div>
