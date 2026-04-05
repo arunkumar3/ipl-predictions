@@ -50,11 +50,30 @@ async function fetchFromESPN(espnMatchId: string): Promise<{ completed: boolean;
   let winner: string | null = null;
   if (completed) {
     const competitors = competition.competitors || [];
-    const winnerTeam = competitors.find((c: any) => c.winner === true);
+    console.log(`[ESPN] Raw response for event ${espnMatchId}:`, JSON.stringify({
+      state: statusType.state,
+      detail: statusType.detail,
+      completed: statusType.completed,
+      competitors: competitors.map((c: any) => (c.team?.abbreviation || '?') + ' winner=' + c.winner),
+    }));
+
+    // ESPN may return winner as boolean true OR string "true"
+    const winnerTeam = competitors.find((c: any) => c.winner === true || c.winner === 'true');
     if (winnerTeam) {
       const abbrev = winnerTeam.team?.abbreviation || '';
       winner = mapAbbrev(abbrev);
       console.log(`[ESPN] Winner abbreviation: ${abbrev} → mapped: ${winner}`);
+    }
+
+    // Fallback: parse winner from result text ("SRH won by 23 runs")
+    if (!winner && resultText) {
+      for (const [abbrev, code] of Object.entries(ABBREV_MAP)) {
+        if (resultText.startsWith(abbrev + ' ') || resultText.includes(abbrev + ' won')) {
+          winner = code;
+          console.log(`[ESPN] Winner parsed from resultText: ${resultText} → ${winner}`);
+          break;
+        }
+      }
     }
   }
 

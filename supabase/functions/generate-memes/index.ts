@@ -366,6 +366,7 @@ ROTATION RULES:
   // GROK
   if (!existingModels.includes('grok')) {
     try {
+      console.log('[Grok] Calling API with model: grok-3');
       const res = await fetch(GROK_API_URL, {
         method: 'POST',
         headers: {
@@ -382,12 +383,16 @@ ROTATION RULES:
           temperature: 1.0,
         }),
       });
+      console.log('[Grok] Response status:', res.status);
       const data = await res.json();
+      console.log('[Grok] Response body:', JSON.stringify(data).substring(0, 500));
       const text = data.choices?.[0]?.message?.content || '[]';
       const cleaned = text.replace(/```json|```/g, '').trim();
-      results.push({ model: 'grok', memes: JSON.parse(cleaned) });
+      const grokMemes = JSON.parse(cleaned);
+      console.log('[Grok] Parsed memes count:', grokMemes.length);
+      results.push({ model: 'grok', memes: grokMemes });
     } catch (err) {
-      console.error('Grok error:', err);
+      console.error('[Grok] Full error:', JSON.stringify(err), err.message, err.stack);
       results.push({ model: 'grok', memes: [], error: String(err) });
     }
   }
@@ -395,6 +400,7 @@ ROTATION RULES:
   // GEMINI
   if (!existingModels.includes('gemini')) {
     try {
+      console.log('[Gemini] Calling API with model: gemini-2.0-flash');
       const res = await fetch(
         `${GEMINI_API_URL}?key=${Deno.env.get('GEMINI_API_KEY')}`,
         {
@@ -411,12 +417,16 @@ ROTATION RULES:
           }),
         }
       );
+      console.log('[Gemini] Response status:', res.status);
       const data = await res.json();
+      console.log('[Gemini] Response body:', JSON.stringify(data).substring(0, 500));
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
       const cleaned = text.replace(/```json|```/g, '').trim();
-      results.push({ model: 'gemini', memes: JSON.parse(cleaned) });
+      const geminiMemes = JSON.parse(cleaned);
+      console.log('[Gemini] Parsed memes count:', geminiMemes.length);
+      results.push({ model: 'gemini', memes: geminiMemes });
     } catch (err) {
-      console.error('Gemini error:', err);
+      console.error('[Gemini] Full error:', JSON.stringify(err), err.message, err.stack);
       results.push({ model: 'gemini', memes: [], error: String(err) });
     }
   }
