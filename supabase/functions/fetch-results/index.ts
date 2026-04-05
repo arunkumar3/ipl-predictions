@@ -38,10 +38,14 @@ async function fetchFromESPN(espnMatchId: string): Promise<{ completed: boolean;
     return null;
   }
 
-  const state = competition.status?.type?.state; // "pre", "in", "post"
-  const completed = competition.status?.type?.completed === true || state === 'post';
-  const live = state === 'in';
-  const resultText = competition.status?.type?.detail || competition.status?.type?.shortDetail || '';
+  const statusType = competition.status?.type || {};
+  const state = statusType.state; // "pre", "in", "post"
+  const resultText = statusType.detail || statusType.shortDetail || '';
+  const completed = statusType.completed === true
+    || state === 'post'
+    || resultText === 'Final'
+    || (resultText && resultText.includes('won by'));
+  const live = !completed && state === 'in';
 
   let winner: string | null = null;
   if (completed) {
@@ -117,20 +121,42 @@ Deno.serve(async (req) => {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   };
 
+  // Parse optional match_number from request body
+  let match_number: number | null = null;
+  try {
+    const body = await req.json();
+    match_number = body?.match_number || null;
+  } catch {
+    // No body or invalid JSON — that's fine, check all recent matches
+  }
+
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
 
-  // 1. Get matches that need checking: live matches always, upcoming only if scheduled in last 24h
-  const now = new Date().toISOString();
-  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  // 1. Get matches that need checking
+  let pendingMatches: any[] | null = null;
 
-  const { data: pendingMatches } = await supabase
-    .from('matches')
-    .select('*')
-    .or(`and(status.eq.upcoming,match_date.lte.${now},match_date.gte.${oneDayAgo}),status.eq.live`)
-    .order('match_number');
+  if (match_number) {
+    // Specific match requested — skip date filter
+    const { data } = await supabase
+      .from('matches')
+      .select('*')
+      .eq('match_number', match_number);
+    pendingMatches = data;
+    console.log(`[fetch-results] Manual check for match #${match_number}`);
+  } else {
+    // Normal: live matches always, upcoming only if scheduled in last 24h
+    const now = new Date().toISOString();
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data } = await supabase
+      .from('matches')
+      .select('*')
+      .or(`and(status.eq.upcoming,match_date.lte.${now},match_date.gte.${oneDayAgo}),status.eq.live`)
+      .order('match_number');
+    pendingMatches = data;
+  }
 
   if (!pendingMatches?.length) {
     return new Response(

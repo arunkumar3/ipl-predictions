@@ -97,7 +97,7 @@ function AdminView() {
       if (model !== 'both') {
         await supabase.from('memes').delete().eq('match_number', memeMatch).eq('model', model);
       }
-      const res = await supabase.functions.invoke('generate-memes', { body: { match_number: memeMatch } });
+      const res = await supabase.functions.invoke('generate-memes', { body: { match_number: memeMatch, regenerate: true } });
       if (res.error) throw res.error;
       const data = res.data;
       setMemeStatus(`✓ Generated ${data.generated} memes: ${data.results.map(r => `${r.model}(${r.count})`).join(', ')}`);
