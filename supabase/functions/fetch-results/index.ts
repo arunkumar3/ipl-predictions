@@ -122,11 +122,14 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
 
-  // 1. Get all matches that need checking
+  // 1. Get matches that need checking: live matches always, upcoming only if scheduled in last 24h
+  const now = new Date().toISOString();
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
   const { data: pendingMatches } = await supabase
     .from('matches')
     .select('*')
-    .in('status', ['upcoming', 'live'])
+    .or(`and(status.eq.upcoming,match_date.lte.${now},match_date.gte.${oneDayAgo}),status.eq.live`)
     .order('match_number');
 
   if (!pendingMatches?.length) {
