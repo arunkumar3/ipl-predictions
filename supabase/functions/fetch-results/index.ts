@@ -1,126 +1,226 @@
 // Supabase Edge Function — Deno runtime
-// Fetches match results from ESPN API and updates the matches table
+// Fetches match results from ESPN / ESPNCricinfo APIs and updates the matches table
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const TEAM_MAP: Record<string, string> = {
-  'Royal Challengers Bengaluru': 'RCB',
-  'Royal Challengers Bangalore': 'RCB',
-  'Mumbai Indians': 'MI',
-  'Chennai Super Kings': 'CSK',
-  'Kolkata Knight Riders': 'KKR',
-  'Rajasthan Royals': 'RR',
-  'Sunrisers Hyderabad': 'SRH',
-  'Delhi Capitals': 'DC',
-  'Punjab Kings': 'PBKS',
-  'Gujarat Titans': 'GT',
-  'Lucknow Super Giants': 'LSG',
+// ESPN sometimes uses different abbreviations than our database
+const ABBREV_MAP: Record<string, string> = {
+  PK: 'PBKS', PBKS: 'PBKS',
+  LKN: 'LSG', LSG: 'LSG',
+  HYD: 'SRH', SRH: 'SRH',
+  BLR: 'RCB', RCB: 'RCB',
+  DEL: 'DC', DC: 'DC',
+  GUJ: 'GT', GT: 'GT',
+  MI: 'MI', CSK: 'CSK', KKR: 'KKR', RR: 'RR',
+};
+
+function mapAbbrev(abbrev: string): string | null {
+  return ABBREV_MAP[abbrev] || ABBREV_MAP[abbrev.toUpperCase()] || null;
 }
 
-Deno.serve(async (_req) => {
-  // Create Supabase client with SERVICE ROLE key (needs write access to matches)
+// ============================================================
+// ESPN Public API (Approach 1)
+// ============================================================
+async function fetchFromESPN(espnMatchId: string): Promise<{ completed: boolean; live: boolean; winner: string | null; resultText: string } | null> {
+  const url = `https://site.api.espn.com/apis/site/v2/sports/cricket/8048/summary?event=${espnMatchId}`;
+  console.log(`[ESPN] Fetching: ${url}`);
+
+  const res = await fetch(url);
+  if (!res.ok) {
+    console.log(`[ESPN] HTTP ${res.status} for event ${espnMatchId}`);
+    return null;
+  }
+
+  const data = await res.json();
+  const competition = data?.header?.competitions?.[0];
+  if (!competition) {
+    console.log(`[ESPN] No competition data for event ${espnMatchId}`);
+    return null;
+  }
+
+  const state = competition.status?.type?.state; // "pre", "in", "post"
+  const completed = competition.status?.type?.completed === true || state === 'post';
+  const live = state === 'in';
+  const resultText = competition.status?.type?.detail || competition.status?.type?.shortDetail || '';
+
+  let winner: string | null = null;
+  if (completed) {
+    const competitors = competition.competitors || [];
+    const winnerTeam = competitors.find((c: any) => c.winner === true);
+    if (winnerTeam) {
+      const abbrev = winnerTeam.team?.abbreviation || '';
+      winner = mapAbbrev(abbrev);
+      console.log(`[ESPN] Winner abbreviation: ${abbrev} → mapped: ${winner}`);
+    }
+  }
+
+  console.log(`[ESPN] event=${espnMatchId} state=${state} completed=${completed} live=${live} winner=${winner}`);
+  return { completed, live, winner, resultText };
+}
+
+// ============================================================
+// ESPNCricinfo API (Approach 2 — fallback)
+// ============================================================
+async function fetchFromCricinfo(espnMatchId: string): Promise<{ completed: boolean; live: boolean; winner: string | null; resultText: string } | null> {
+  const url = `https://hs-consumer-api.espncricinfo.com/v1/pages/match/details?lang=en&seriesId=1510719&matchId=${espnMatchId}`;
+  console.log(`[CricInfo] Fetching: ${url}`);
+
+  const res = await fetch(url);
+  if (!res.ok) {
+    console.log(`[CricInfo] HTTP ${res.status} for match ${espnMatchId}`);
+    return null;
+  }
+
+  const data = await res.json();
+  const match = data?.match;
+  if (!match) {
+    console.log(`[CricInfo] No match data for ${espnMatchId}`);
+    return null;
+  }
+
+  const state = match.state; // "PRE", "LIVE", "POST"
+  const completed = state === 'POST';
+  const live = state === 'LIVE';
+  const resultText = match.statusText || '';
+
+  let winner: string | null = null;
+  if (completed && match.teams) {
+    const winnerTeam = match.teams.find((t: any) => t.isWinner === true);
+    if (winnerTeam) {
+      const abbrev = winnerTeam.team?.abbreviation || '';
+      winner = mapAbbrev(abbrev);
+      console.log(`[CricInfo] Winner abbreviation: ${abbrev} → mapped: ${winner}`);
+    }
+  }
+
+  console.log(`[CricInfo] match=${espnMatchId} state=${state} completed=${completed} live=${live} winner=${winner}`);
+  return { completed, live, winner, resultText };
+}
+
+// ============================================================
+// MAIN HANDLER
+// ============================================================
+Deno.serve(async (req) => {
+  // CORS must be FIRST
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      },
+    });
+  }
+
+  const corsHeaders = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  )
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  );
 
-  // 1. Get matches that should have started but don't have results yet
+  // 1. Get all matches that need checking
   const { data: pendingMatches } = await supabase
     .from('matches')
     .select('*')
     .in('status', ['upcoming', 'live'])
-    .lt('match_date', new Date().toISOString())
-    .order('match_number')
+    .order('match_number');
 
   if (!pendingMatches?.length) {
     return new Response(
-      JSON.stringify({ message: 'No pending matches', updated: 0 }),
-      { headers: { 'Content-Type': 'application/json' } }
-    )
+      JSON.stringify({ message: 'No pending matches', checked: 0, updated: 0, matches: [] }),
+      { headers: corsHeaders },
+    );
   }
 
-  const updates: Array<{ match: number; winner?: string; status?: string; detail?: string }> = []
+  console.log(`[fetch-results] Checking ${pendingMatches.length} matches...`);
+
+  const results: any[] = [];
 
   for (const match of pendingMatches) {
+    const espnId = match.espn_match_id;
+    if (!espnId) {
+      console.log(`[fetch-results] Match #${match.match_number} has no espn_match_id, skipping`);
+      results.push({ match: match.match_number, skipped: true, reason: 'no espn_match_id' });
+      continue;
+    }
+
     try {
-      // 2. Call ESPN API
-      const espnUrl = `https://site.api.espn.com/apis/site/v2/sports/cricket/8048/summary?event=${match.espn_match_id}`
-      const res = await fetch(espnUrl)
-      const data = await res.json()
+      // Try ESPN first, then CricInfo fallback
+      let result = await fetchFromESPN(espnId);
+      let source = 'espn';
 
-      const competition = data?.header?.competitions?.[0]
-      if (!competition) continue
+      if (!result) {
+        console.log(`[fetch-results] ESPN failed for match #${match.match_number}, trying CricInfo...`);
+        result = await fetchFromCricinfo(espnId);
+        source = 'cricinfo';
+      }
 
-      const stateStr = competition.status?.type?.state // "pre", "in", "post"
-      const detail = competition.status?.type?.detail || ''
+      if (!result) {
+        console.log(`[fetch-results] Both APIs failed for match #${match.match_number}`);
+        results.push({ match: match.match_number, error: 'Both APIs returned no data' });
+        continue;
+      }
 
-      if (stateStr === 'post') {
-        // Match completed — find winner
-        const competitors = competition.competitors || []
-        const winnerTeam = competitors.find((c: any) => c.winner === true)
+      if (result.completed && result.winner) {
+        // Match completed — update DB
+        await supabase
+          .from('matches')
+          .update({
+            winner: result.winner,
+            result_text: result.resultText,
+            status: 'completed',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('match_number', match.match_number);
 
-        let winnerCode: string | null = null
-        if (winnerTeam) {
-          const fullName = winnerTeam.team?.name || winnerTeam.team?.displayName || ''
-          winnerCode = TEAM_MAP[fullName] || null
+        console.log(`[fetch-results] ✅ Match #${match.match_number}: ${result.winner} won (via ${source})`);
+
+        // Trigger meme generation (fire-and-forget)
+        try {
+          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-memes`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ match_number: match.match_number }),
+          });
+          console.log(`[fetch-results] Meme generation triggered for match #${match.match_number}`);
+        } catch (err) {
+          console.error(`[fetch-results] Meme generation failed for match #${match.match_number}:`, err);
         }
 
-        // Fallback: parse the detail text
-        if (!winnerCode && detail) {
-          for (const [name, code] of Object.entries(TEAM_MAP)) {
-            if (detail.includes(name)) {
-              winnerCode = code
-              break
-            }
-          }
-        }
-
-        if (winnerCode) {
-          await supabase
-            .from('matches')
-            .update({
-              winner: winnerCode,
-              result_text: detail,
-              status: 'completed',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('match_number', match.match_number)
-
-          updates.push({ match: match.match_number, winner: winnerCode, detail })
-
-          // Trigger meme generation (fire-and-forget — don't block result update)
-          try {
-            await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-memes`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ match_number: match.match_number }),
-            });
-          } catch (err) {
-            console.error('Meme generation failed:', err);
-          }
-        }
-      } else if (stateStr === 'in' && match.status !== 'live') {
+        results.push({ match: match.match_number, winner: result.winner, resultText: result.resultText, source });
+      } else if (result.live && match.status !== 'live') {
         // Match is live — update status
         await supabase
           .from('matches')
           .update({ status: 'live', updated_at: new Date().toISOString() })
-          .eq('match_number', match.match_number)
+          .eq('match_number', match.match_number);
 
-        updates.push({ match: match.match_number, status: 'live' })
+        console.log(`[fetch-results] 🔴 Match #${match.match_number} is now LIVE (via ${source})`);
+        results.push({ match: match.match_number, status: 'live', source });
+      } else {
+        results.push({ match: match.match_number, status: 'no_change', source });
       }
-
-      // 3. Courtesy delay between API calls
-      await new Promise((r) => setTimeout(r, 300))
     } catch (err) {
-      console.error(`Error fetching match ${match.match_number}:`, err)
+      console.error(`[fetch-results] Error on match #${match.match_number}:`, err);
+      results.push({ match: match.match_number, error: String(err) });
     }
+
+    // Courtesy delay between API calls
+    await new Promise((r) => setTimeout(r, 500));
   }
 
+  const updated = results.filter((r) => r.winner || r.status === 'live').length;
+  console.log(`[fetch-results] Done. Checked ${pendingMatches.length}, updated ${updated}`);
+
   return new Response(
-    JSON.stringify({ updated: updates.length, results: updates }),
-    { headers: { 'Content-Type': 'application/json' } }
-  )
-})
+    JSON.stringify({ checked: pendingMatches.length, updated, matches: results }),
+    { headers: corsHeaders },
+  );
+});
