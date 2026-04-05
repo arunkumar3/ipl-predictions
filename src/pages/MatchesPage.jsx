@@ -175,13 +175,43 @@ function MatchesView({ userName }) {
     return entry || { points: 0, accuracy: 0, currentStreak: 0, rank: '-' };
   }, [leaderboard, userName]);
 
+  const todayKey = getDateKey(new Date().toISOString());
+
   const filteredMatches = useMemo(() => {
     switch (activeTab) {
       case 'Upcoming': return matches.filter((m) => m.status === 'upcoming' && !isMatchLocked(m.match_date));
       case 'Completed': return matches.filter((m) => m.status === 'completed' || (m.status === 'upcoming' && isMatchLocked(m.match_date)));
-      default: return matches;
+      default: {
+        // Sort: live first, then today's matches, then upcoming (asc), then completed (desc)
+        return [...matches].sort((a, b) => {
+          const aKey = getDateKey(a.match_date);
+          const bKey = getDateKey(b.match_date);
+          const aIsLive = a.status === 'live';
+          const bIsLive = b.status === 'live';
+          const aIsToday = aKey === todayKey;
+          const bIsToday = bKey === todayKey;
+          const aIsUpcoming = a.status === 'upcoming' && !aIsToday;
+          const bIsUpcoming = b.status === 'upcoming' && !bIsToday;
+
+          const rank = (m, isLive, isToday, isUpcoming) => {
+            if (isLive) return 0;
+            if (isToday) return 1;
+            if (isUpcoming) return 2;
+            return 3; // completed
+          };
+
+          const aRank = rank(a, aIsLive, aIsToday, aIsUpcoming);
+          const bRank = rank(b, bIsLive, bIsToday, bIsUpcoming);
+          if (aRank !== bRank) return aRank - bRank;
+
+          // Within completed, show most recent first
+          if (aRank === 3) return bKey.localeCompare(aKey);
+          // Otherwise ascending by date
+          return aKey.localeCompare(bKey);
+        });
+      }
     }
-  }, [matches, activeTab]);
+  }, [matches, activeTab, todayKey]);
 
   const groupedMatches = useMemo(() => {
     const groups = {};
@@ -192,6 +222,26 @@ function MatchesView({ userName }) {
     });
     return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
   }, [filteredMatches]);
+
+  // Auto-scroll to today's/nearest upcoming match on first load
+  const hasAutoScrolled = useRef(false);
+  useEffect(() => {
+    if (hasAutoScrolled.current || matches.length === 0) return;
+    hasAutoScrolled.current = true;
+
+    // Find first live match, or today's match, or nearest upcoming match
+    const target =
+      matches.find((m) => m.status === 'live') ||
+      matches.find((m) => getDateKey(m.match_date) === todayKey) ||
+      matches.find((m) => m.status === 'upcoming' && !isMatchLocked(m.match_date));
+
+    if (target) {
+      setTimeout(() => {
+        const el = cardRefs.current[target.match_number];
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }, [matches, todayKey]);
 
   const handleTickerNavigate = useCallback((matchNumber) => {
     setActiveTab('All');
